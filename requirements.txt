@@ -3,4 +3,6 @@ requests>=2.31
 python-dotenv>=1.0
 pytest
 scikit-learn
+pandas
+numpy
 
