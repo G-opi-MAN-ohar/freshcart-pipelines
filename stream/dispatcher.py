@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 """
+stream/dispatcher.py
+
+Publishes simulated Rapido ride and food dispatch requests every 2 seconds
+to the 'rapido-dispatch' RabbitMQ topic exchange.
+Every 10th message is intentionally malformed (missing the "zone" field)
+to test consumer basic_nack(requeue=False) rejection handling.
+
 Routing key format: <city>.<zone>.<type>
-Payload format:     {"id": ..., "city": ..., "zone": ..., "type": ..., "ts": ...}
+Good payload:       {"id": ..., "city": ..., "zone": ..., "type": ..., "ts": ...}
+Bad payload (1/10): {"id": ..., "city": ..., "type": ..., "ts": ...}
 """
 
 import json
@@ -55,7 +63,8 @@ def main() -> None:
 
     print(
         f"[DISPATCHER] Connected to RabbitMQ. Publishing to topic exchange "
-        f"'{EXCHANGE_NAME}' every {PUBLISH_INTERVAL_SEC:.0f}s (Ctrl+C to stop)..."
+        f"'{EXCHANGE_NAME}' every {PUBLISH_INTERVAL_SEC:.0f}s "
+        f"(sending 1 bad message missing 'zone' every 10 messages)..."
     )
 
     seq = 1
@@ -66,13 +75,28 @@ def main() -> None:
             req_type = random.choice(REQUEST_TYPES)
 
             routing_key = f"{city}.{zone}.{req_type}"
-            message = {
-                "id": f"req-{seq:04d}-{uuid.uuid4().hex[:6]}",
-                "city": city,
-                "zone": zone,
-                "type": req_type,
-                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            }
+            msg_id = f"req-{seq:04d}-{uuid.uuid4().hex[:6]}"
+            ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+            if seq % 10 == 0:
+                # Every 10th message omits the 'zone' field
+                message = {
+                    "id": msg_id,
+                    "city": city,
+                    "type": req_type,
+                    "ts": ts,
+                }
+                status_label = "BAD (missing 'zone')"
+            else:
+                message = {
+                    "id": msg_id,
+                    "city": city,
+                    "zone": zone,
+                    "type": req_type,
+                    "ts": ts,
+                }
+                status_label = "GOOD"
+
             payload = json.dumps(message)
 
             channel.basic_publish(
@@ -85,7 +109,10 @@ def main() -> None:
                 ),
             )
 
-            print(f"[DISPATCHER] Sent [{routing_key}] -> {payload}", flush=True)
+            print(
+                f"[DISPATCHER] #{seq:02d} [{status_label}] Sent [{routing_key}] -> {payload}",
+                flush=True,
+            )
             seq += 1
             time.sleep(PUBLISH_INTERVAL_SEC)
 

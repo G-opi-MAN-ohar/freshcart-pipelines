@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 """
+stream/driver.py
+
+Usage:
+    python3 stream/driver.py NAME PATTERN
+
 Declares an exclusive private queue, binds it to the 'rapido-dispatch' topic
-exchange with PATTERN, prints each matching request received, and sends an
-explicit basic_ack.
+exchange with PATTERN, inspects each incoming JSON request:
+- If the 'zone' field is missing/empty, rejects with basic_nack(requeue=False).
+- Otherwise, processes the request and acknowledges with basic_ack.
 """
 
 import json
@@ -73,12 +79,23 @@ def main() -> None:
         try:
             data = json.loads(body.decode("utf-8"))
         except json.JSONDecodeError:
-            data = body.decode("utf-8", errors="replace")
+            data = None
+
+        # Reject messages missing the 'zone' field without requeueing
+        if not isinstance(data, dict) or not data.get("zone"):
+            print(
+                f"[DRIVER:{driver_name}] REJECTED (missing 'zone') "
+                f"key='{method.routing_key}' | payload={body.decode('utf-8', errors='replace')} | "
+                f"Sending basic_nack(requeue=False) (tag={method.delivery_tag})",
+                flush=True,
+            )
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+            return
 
         print(
-            f"[DRIVER:{driver_name}] Received key='{method.routing_key}' | "
-            f"payload={json.dumps(data) if isinstance(data, dict) else data} | "
-            f"Sending ACK (tag={method.delivery_tag})",
+            f"[DRIVER:{driver_name}] PROCESSED key='{method.routing_key}' | "
+            f"payload={json.dumps(data)} | "
+            f"Sending basic_ack (tag={method.delivery_tag})",
             flush=True,
         )
         ch.basic_ack(delivery_tag=method.delivery_tag)
