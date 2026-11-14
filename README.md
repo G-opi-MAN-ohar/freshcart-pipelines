@@ -1,7 +1,7 @@
 # freshcart-pipelines
 # freshcart-pipelines
 
-[![CI](https://github.com/<your-username>/freshcart-pipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/freshcart-pipelines/actions/workflows/ci.yml)
+[![CI](https://github.com/G-opi-MAN-ohar/freshcart-pipelines/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-username>/freshcart-pipelines/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![Snowflake](https://img.shields.io/badge/warehouse-Snowflake-29B5E8)
 ![Mage](https://img.shields.io/badge/orchestration-Mage-6B4FBB)
