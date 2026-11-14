@@ -321,4 +321,4 @@ In Colab, store these in **Colab Secrets** instead.
 
 ## Author
 
-**<Your Name>** · [LinkedIn](https://www.linkedin.com/in/<your-handle>) · [GitHub](https://github.com/<your-username>)
+**<Your Name>** · [LinkedIn](https://www.linkedin.com/in/gopi-manohar-ba3a13247) · [GitHub](https://github.com/G-opi-MAN-ohar)
